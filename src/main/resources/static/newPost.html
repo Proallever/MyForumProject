@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="http://code.jquery.com/jquery-latest.js">
+    </script>
+    <meta charset="UTF-8">
+    <title>Post a new Thread</title>
+</head>
+<body>
+<p>----编写帖子-----</p>
+<form id="post" method="post">
+    <div>主题：<input id="title" name="title"></div>
+    <div>内容:<textarea id="postText" name="postText"></textarea> </div>
+
+    <div><input type="button" value="发表" id="submit"></div>
+</form>
+</body>
+<script>
+    function GetQueryString(name) {
+        var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)");
+        var r = window.location.search.substr(1).match(reg);
+        if (r != null)
+            return unescape(r[2]);
+        return "";
+    }
+    var userName=GetQueryString("userName");
+    var uid=GetQueryString("uid");
+    $("#user-name-label").append(userName);
+    $("#submit").click(function () {
+        var title=$("#title").val();
+        var postText=$("#postText").val();
+        var createTime = dateToStr(new Date());
+        var updateTime = dateToStr(new Date());
+        console.log(title);
+        console.log(postText);
+        var error="";
+        if(title.length == ""){
+            error += "标题不能为空";
+            error += "\n";
+        }
+        if(postText.length==""){
+            error += "内容不能为空";
+            error += "\n";
+        }
+        if(error!=""){
+            alert(error);
+        }else {
+            $.ajax(
+                "/ForumPost/newPost", {
+                    type: 'POST',
+                    dataType: 'text',
+                    contentType: 'application/json;charset=UTF-8',
+                    data: JSON.stringify({"uid":uid, "userName":userName, "title":title, "postText":postText, "createTime":createTime, "updateTime":updateTime}),
+                    success: function (data) {
+                        console.log(data);
+                        if (data=="发帖成功") {
+                            window.location.href="/ForumPost/postView?title="+title+"&uid="+uid+"&userName="+userName;
+                        } else {
+                            alert(data);
+                        }
+                    },
+                    error: function (XMLHttpRequest, textStatus, errorThrown) {
+
+                        alert(XMLHttpRequest.status);//提示200，
+
+                        alert(XMLHttpRequest.readyState);//提示4，
+
+                        alert(textStatus);//提示parsererror
+
+                    }
+                }
+            )
+        }
+    })
+    function dateToStr(datetime){
+
+        var year = datetime.getFullYear();
+        var month = datetime.getMonth()+1;//js从0开始取
+        var date = datetime.getDate();
+        var hour = datetime.getHours();
+        var minutes = datetime.getMinutes();
+        var second = datetime.getSeconds();
+
+        if(month<10){
+            month = "0" + month;
+        }
+        if(date<10){
+            date = "0" + date;
+        }
+        if(hour <10){
+            hour = "0" + hour;
+        }
+        if(minutes <10){
+            minutes = "0" + minutes;
+        }
+        if(second <10){
+            second = "0" + second ;
+        }
+
+        var time = year+"-"+month+"-"+date+" "+hour+":"+minutes+":"+second; //2009-06-12 17:18:05
+// alert(time);
+        return time;
+    }
+</script>
+</html>

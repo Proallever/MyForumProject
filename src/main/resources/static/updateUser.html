@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="http://code.jquery.com/jquery-latest.js">
+    </script>
+    <meta charset="UTF-8">
+    <title>update User</title>
+</head>
+<body>
+<p id="user-name-label">用户名：</p>
+<form id="f" method="post">
+    <div>
+        新密码：<input id="password1" name="password1" type="password">
+        再次确认新密码：<input id="password" name="password" type="password">
+        <input type="button" value="确认修改" id="submit">
+    </div>
+</form>
+</body>
+<script>
+    function GetQueryString(name) {
+        var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)");
+        var r = window.location.search.substr(1).match(reg);
+        if (r != null)
+            return unescape(r[2]);
+        return "";
+    }
+    var uid=GetQueryString("uid");
+    var userName=GetQueryString("userName");
+    $("#user-name-label").append(userName);
+    $("#submit").click(function () {
+        var updateTime = dateToStr(new Date());
+        var password1=$("#password1").val();
+        var password=$("#password").val();
+        var error="";
+        if(password.length==""){
+            error += "密码不能为空";
+            error += "\n";
+        }
+        if(password!=password1){
+            error += "两次输入密码不同";
+            error += "\n";
+        }
+        if(error!=""){
+            alert(error);
+        }else {
+            $.ajax(
+                "/Forum/updateUser",
+                {   type:'POST',
+                    dataType: 'text',
+                    contentType: 'application/json;charset=UTF-8',
+                    data:JSON.stringify({"uid":uid,"password":password,"updateTime":updateTime}),
+                    success:function (data) {
+                        if(data!="更新成功"){
+                            alert(data)
+                        }else {
+                            alert(data);
+                            window.location.href="/Forum"
+                        }
+                    }
+                }
+            )
+        }
+
+    })
+    function dateToStr(datetime){
+
+        var year = datetime.getFullYear();
+        var month = datetime.getMonth()+1;//js从0开始取
+        var date = datetime.getDate();
+        var hour = datetime.getHours();
+        var minutes = datetime.getMinutes();
+        var second = datetime.getSeconds();
+
+        if(month<10){
+            month = "0" + month;
+        }
+        if(date<10){
+            date = "0" + date;
+        }
+        if(hour <10){
+            hour = "0" + hour;
+        }
+        if(minutes <10){
+            minutes = "0" + minutes;
+        }
+        if(second <10){
+            second = "0" + second ;
+        }
+
+        var time = year+"-"+month+"-"+date+" "+hour+":"+minutes+":"+second; //2009-06-12 17:18:05
+// alert(time);
+        return time;
+    }
+</script>
+</html>

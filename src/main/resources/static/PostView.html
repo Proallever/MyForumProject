@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="http://code.jquery.com/jquery-latest.js">
+    </script>
+    <script>
+        function GetQueryString(name) {
+            var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)");
+            var r = window.location.search.substr(1).match(reg);
+            if (r != null)
+                return unescape(r[2]);
+            return "";
+        }
+        var uid=GetQueryString("uid");
+        var userName=GetQueryString("userName");
+        var title=GetQueryString("title");
+        console.log(title);
+        $.ajax(
+            "/ForumPost/getPostByTitle",
+            {
+                data:{title:title},
+                success:function (data) {
+                    $("#author").append(data.userName);
+                    $("#postText").html(data.postText);
+                    $("#pid").html(data.pid);
+                    $.ajax(
+                        "/ForumComment/listCommentByPid",
+                        {
+                            dataType:'json',
+                            data:{pid:data.pid},
+                            success:function (comment) {
+                                listComment(comment,data);
+                            },
+                            error:function () {
+                                alert("评论无法显示")
+                            }
+                        }
+
+                    )
+                },
+                error:function () {
+                    alert("读取帖子失败")
+                }
+            }
+        )
+        function listComment(comment,data) {
+            for(var i in comment){
+                var str = "";
+                str += "<lable>" + comment[i].userName + ":</lable>" + "<p>" + comment[i].commentText + "</p>" +
+                    "<label>" + comment[i].floor + "楼</label>" +
+                    "<textarea id='reply"+ comment[i].cid +"'></textarea><button onclick='addReply("+ comment[i].cid +")'>回复</button><br>";
+                $.ajax(
+                    "/ForumComment/listCommentByCid",
+                    {
+                        dataType:'json',
+                        data:{cid:comment[i].cid},
+                        async:false,
+                        success:function (reply) {
+                            for(var j in reply) {
+                                str += "<blockquote><lable>" + reply[j].userName + ":</lable><p>" + reply[j].commentText + "</p></blockquote>";
+                            }
+                        },
+                        error:function () {
+                            alert("回复无法显示")
+                        }
+                    }
+                )
+                $("#commentList").append(str);
+            }
+            addComment(data);
+        }
+
+        function getFloor(data) {
+            var floor = 1;
+            $.ajax(
+                "/ForumComment/getLastComment",
+                {
+                    async:false,
+                    data:{pid:data.pid},
+                    success:function (lastComment) {
+                        if(lastComment.floor!=null) {
+                            floor = lastComment.floor + 1;
+                        }else
+                            floor=1;
+                    },
+                    error:function () {
+                        alert("楼层获取错误")
+                    }
+                }
+            )
+            return floor;
+        }
+
+    </script>
+    <meta charset="UTF-8">
+    <title>Post</title>
+</head>
+<body>
+    <div>
+        <h1 id="title"></h1><br>
+        <label id="author">作者:</label><br>pid:<label id="pid"></label>
+
+    </div>
+    <div><p id="postText"></p></div>
+    <p>-----------------------------------</p>
+    <div id="commentList">
+
+    </div>
+    <div>
+        <form>
+            <textarea id="commentText"></textarea><br>
+            <input type="button" value="回复" id="comment">
+        </form>
+    </div>
+</body>
+<script>
+    window.document.getElementById("title").innerHTML=title;
+
+    function addReply(toReply) {
+
+        var createTime = dateToStr(new Date());
+        var updateTime = dateToStr(new Date());
+        var id = "reply" + toReply;
+        var reply = $("#"+id).val();
+        var error = "";
+
+        if (reply.length == "") {
+            error += "内容不能为空";
+            error += "\n";
+        }
+        if (error != "") {
+            alert(error);
+        } else {
+            $.ajax(
+                "/ForumComment/addComment",
+                {
+                    type: 'POST',
+                    dataType: 'text',
+                    contentType: 'application/json;charset=UTF-8',
+                    data: JSON.stringify({
+                        "uid": uid,
+                        "userName": userName,
+                        "toReply": toReply,
+                        "createTime": createTime,
+                        "updateTime": updateTime,
+                        "commentText": reply,
+                        "isReply": true
+                    }),
+                    success: function (msg) {
+                        alert(msg);
+                        window.location.reload();
+                    },
+                    error: function (XMLHttpRequest, textStatus, errorThrown) {
+
+                        alert(XMLHttpRequest.status);//提示200，
+
+                        alert(XMLHttpRequest.readyState);//提示4，
+
+                        alert(textStatus);//提示parsererror
+                    }
+                }
+            )
+        }
+    }
+
+    function addComment(data) {
+        var pid = data.pid;
+        console.log(pid);
+        $("#comment").click(function () {
+            var commentText = $("#commentText").val();
+            var createTime = dateToStr(new Date());
+            var updateTime = dateToStr(new Date());
+
+            var floor = getFloor(data);
+            var error = "";
+
+            if (commentText.length == "") {
+                error += "内容不能为空";
+                error += "\n";
+            }
+            if (error != "") {
+                alert(error);
+            } else {
+                $.ajax(
+                    "/ForumComment/addComment",
+                    {
+                        type: 'POST',
+                        dataType: 'text',
+                        contentType: 'application/json;charset=UTF-8',
+                        data: JSON.stringify({
+                            "uid": uid,
+                            "userName": userName,
+                            "pid": pid,
+                            "floor": floor,
+                            "createTime": createTime,
+                            "updateTime": updateTime,
+                            "commentText": commentText,
+                            "isReply": false
+                        }),
+                        success: function (msg) {
+                            alert(msg);
+                            window.location.reload();
+                        },
+                        error: function (XMLHttpRequest, textStatus, errorThrown) {
+
+                            alert(XMLHttpRequest.status);//提示200，
+
+                            alert(XMLHttpRequest.readyState);//提示4，
+
+                            alert(textStatus);//提示parsererror
+                        }
+                    }
+                )
+            }
+        })
+
+    }
+    function dateToStr(datetime){
+
+        var year = datetime.getFullYear();
+        var month = datetime.getMonth()+1;//js从0开始取
+        var date = datetime.getDate();
+        var hour = datetime.getHours();
+        var minutes = datetime.getMinutes();
+        var second = datetime.getSeconds();
+
+        if(month<10){
+            month = "0" + month;
+        }
+        if(date<10){
+            date = "0" + date;
+        }
+        if(hour <10){
+            hour = "0" + hour;
+        }
+        if(minutes <10){
+            minutes = "0" + minutes;
+        }
+        if(second <10){
+            second = "0" + second ;
+        }
+
+        var time = year+"-"+month+"-"+date+" "+hour+":"+minutes+":"+second; //2009-06-12 17:18:05
+// alert(time);
+        return time;
+    }
+</script>
+</html>

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.stgh.forum.mapper.CommentMapper">
+    <resultMap id="commentMap" type="com.stgh.forum.pojo.Comment">
+        <id column="cid" property="cid" jdbcType="INTEGER"></id>
+        <result column="userName" property="userName" jdbcType="VARCHAR"></result>
+        <result column="floor" property="floor" jdbcType="INTEGER"></result>
+        <result column="createTime" property="createTime" jdbcType="TIMESTAMP"></result>
+        <result column="updateTime" property="updateTime" jdbcType="TIMESTAMP"></result>
+        <result column="commentText" property="commentText" jdbcType="VARCHAR"></result>
+        <result column="isReply" property="isReply" jdbcType="INTEGER"></result>
+        <result column="toReply" property="toReply" jdbcType="INTEGER"></result>
+    </resultMap>
+
+    <insert id="insertComment" useGeneratedKeys="true" keyProperty="cid">
+        insert into comment (pid, uid, userName, floor, createTime, updateTime, commentText, isReply, toReply) values
+        (#{pid}, #{uid}, #{userName}, #{floor}, #{createTime}, #{updateTime}, #{commentText}, #{isReply}, #{toReply})
+    </insert>
+
+    <delete id="deleteCommentByCid" parameterType="Integer" >
+        delete from comment where cid=#{cid}
+    </delete>
+
+    <update id="updateComment" parameterType="com.stgh.forum.pojo.Comment" >
+        update comment set commentText=#{commentText},updateTime=#{updateTime}
+    </update>
+
+    <select id="selectCommentByPid" parameterType="Integer" resultMap="commentMap">
+        select * from comment where pid=#{pid} order by floor
+    </select>
+
+    <select id="selectCommentByUid" parameterType="Integer" resultMap="commentMap">
+        select * from comment where uid=#{uid}
+    </select>
+
+    <select id="selectCommentByCid" parameterType="Integer" resultMap="commentMap">
+        select * from comment where toReply=#{cid}
+    </select>
+
+    <select id="selectLastComment" parameterType="Integer" resultMap="commentMap" >
+        select * from comment where pid=#{pid} order by floor desc limit 1
+    </select>
+</mapper>
